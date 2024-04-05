@@ -1,4 +1,4 @@
-from langchain.embeddings import OpenAIEmbeddings
+from langchain_openai.embeddings import OpenAIEmbeddings
 from langchain.evaluation import load_evaluator
 
 

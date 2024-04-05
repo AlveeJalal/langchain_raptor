@@ -7,7 +7,7 @@ import os
 import shutil
 
 CHROMA_PATH = "chroma"
-DATA_PATH = "data/books"
+DATA_PATH = "data/docs"
 
 
 def main():
@@ -21,7 +21,7 @@ def generate_data_store():
 
 
 def load_documents():
-    loader = DirectoryLoader(DATA_PATH, glob="*.md")
+    loader = DirectoryLoader(DATA_PATH)
     documents = loader.load()
     return documents
 
