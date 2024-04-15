@@ -19,36 +19,47 @@ Answer the question based on the above context: {question}
 
 
 def main():
-    # Create CLI.
-    parser = argparse.ArgumentParser()
-    #implemented multi-query retriever
-    parser.add_argument("query_texts", nargs="+", type=str, help="The query texts.")
-    args = parser.parse_args()
-    query_texts = args.query_texts
-
     # Prepare the DB.
     embedding_function = OpenAIEmbeddings()
     db = Chroma(persist_directory=CHROMA_PATH, embedding_function=embedding_function)
 
-    for query_text in query_texts:
-        # Search the DB.
-        results = db.similarity_search_with_relevance_scores(query_text, k=3)
-        if len(results) == 0 or results[0][1] < 0.7:
-            print(f"Unable to find matching results for query: {query_text}")
-            continue
+    # Initialize the model
+    model = ChatOpenAI()
 
-        context_text = "\n\n---\n\n".join([doc.page_content for doc, _score in results])
-        prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
-        prompt = prompt_template.format(context=context_text, question=query_text)
-        print(prompt)
+    while True:
+        user_input = input("You: ")
+        if user_input.lower() == "exit":
+            print("Exiting...")
+            break
 
-        model = ChatOpenAI()
-        response_text = model.predict(prompt)
+        # Split user input by comma to get multiple queries
+        queries = [query.strip() for query in user_input.split(",")]
 
-        sources = [doc.metadata.get("source", None) for doc, _score in results]
-        formatted_response = f"Response: {response_text}\nSources: {sources}"
-        print(formatted_response)
-        print("\n")
+        for query in queries:
+            if not query:
+                continue
+
+            # Search the DB only if user inputs a question
+            if "?" in query:
+                results = db.similarity_search_with_relevance_scores(query, k=3)
+                if len(results) == 0 or results[0][1] < 0.7:
+                    print(f"Unable to find matching results for query: {query}")
+                    continue
+
+                context_text = "\n\n---\n\n".join([doc.page_content for doc, _score in results])
+                prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
+                prompt = prompt_template.format(context=context_text, question=query)
+                print(prompt)
+
+                response_text = model.predict(prompt)
+
+                sources = [doc.metadata.get("source", None) for doc, _score in results]
+                formatted_response = f"Response: {response_text}\nSources: {sources}"
+                print(formatted_response)
+            else:
+                # If it's not a question, just chat freely
+                response_text = model.predict(query)
+                print("Alvee's Assistant:", response_text)
 
 
 if __name__ == "__main__":
