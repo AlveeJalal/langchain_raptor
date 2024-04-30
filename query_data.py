@@ -50,20 +50,24 @@ def main():
                     st.write(f"Unable to find matching results for query: {query}")
                     continue
 
-                context_text = "\n\n---\n\n".join([doc.page_content for doc, _score in results])
-                prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
-                prompt = prompt_template.format(context=context_text, question=query)
-                st.write(prompt)
+                context_tree = [doc for doc, _score in results]
+                response_text, context_text = generate_response(context_tree, query, model)
 
-                response_text = model.predict(prompt)
-
-                sources = [doc.metadata.get("source", None) for doc, _score in results]
-                formatted_response = f"Response: {response_text}\nSources: {sources}"
+                sources = [doc.metadata.get("source", None) for doc in context_tree]
+                formatted_response = f"Context: {context_text}\nResponse: {response_text}\nSources: {sources}"
                 st.write(formatted_response)
             else:
                 # If it's not a question, just chat freely
                 response_text = model.predict(query)
                 st.write("Alvee's Assistant:", response_text)
+
+def generate_response(context_tree, query, model):
+    # Generate response recursively using context_tree
+    context_text = "\n\n---\n\n".join([doc.page_content for doc in context_tree])
+    prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
+    prompt = prompt_template.format(context=context_text, question=query)
+    response_text = model.predict(prompt)
+    return response_text, context_text
 
 if __name__ == "__main__":
     main()
