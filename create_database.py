@@ -47,17 +47,25 @@ def split_text_recursive(text: str, metadata: dict) -> ChunkNode:
     if len(text) <= MAX_CHUNK_SIZE:
         return ChunkNode(Document(page_content=text, metadata=metadata))
 
-    num_chunks = len(text) // MAX_CHUNK_SIZE
+    chunks = []
     start_index = 0
-    children = []
-    for i in range(num_chunks + 1):
-        chunk_text = text[start_index:start_index + MAX_CHUNK_SIZE]
+    while start_index < len(text):
+        end_index = start_index + MAX_CHUNK_SIZE
+        # Find the end of the current sentence
+        while end_index < len(text) and text[end_index] not in ['.', '!', '?']:
+            end_index += 1
+        # If end of sentence not found, take the next MAX_CHUNK_SIZE characters
+        if end_index == len(text):
+            end_index = start_index + MAX_CHUNK_SIZE
+        # Extract the chunk
+        chunk_text = text[start_index:end_index].strip()
         if chunk_text:  # Ensure non-empty chunks
-            child_node = split_text_recursive(chunk_text, metadata)
-            children.append(child_node)
-        start_index += MAX_CHUNK_SIZE - OVERLAP_SIZE
+            chunk_node = split_text_recursive(chunk_text, metadata)
+            chunks.append(chunk_node)
+        start_index = end_index
 
-    return ChunkNode(Document(page_content="", metadata=metadata), children)
+    return ChunkNode(Document(page_content="", metadata=metadata), chunks)
+
 
 
 def save_to_chroma(root_nodes: list[ChunkNode]):

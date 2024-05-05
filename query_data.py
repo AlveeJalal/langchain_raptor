@@ -53,6 +53,7 @@ def main():
                 response_text, context_text = generate_response(context_tree, query, model)
 
                 sources = [doc.metadata.get("source", None) for doc in context_tree]
+                # Ensure there's enough space between context and response
                 formatted_response = f"Context: {context_text}<br><br>Response: {response_text}<br><br>Sources: {sources}"
                 st.write(formatted_response, unsafe_allow_html=True)
             
@@ -105,7 +106,7 @@ def main():
 
 def expand_context(context_tree):
     # Expand context to include more surrounding information
-    expanded_context = "\n\n---\n\n".join([doc.page_content for doc in context_tree])
+    expanded_context = "\n\n---\n\n".join([doc.page_content.strip() for doc in context_tree])
     return expanded_context
     
 def generate_response(context_tree, query, model):
@@ -115,9 +116,8 @@ def generate_response(context_tree, query, model):
     # Generate response using expanded context
     prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
     prompt = prompt_template.format(context=expanded_context, question=query)
-    max_response_length=150
     
-    # Adjust max_response_length based on desired detail level
+    max_response_length = 500  # Adjust as needed
     response_text = model.predict(prompt, max_tokens=max_response_length)
     
     return response_text, expanded_context
